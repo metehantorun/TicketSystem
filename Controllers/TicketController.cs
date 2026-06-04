@@ -103,7 +103,7 @@ namespace TicketSystem.Controllers
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
                 .Include(t => t.Replies).ThenInclude(r => r.Author)
-                .AsSplitQuery()
+                .AsSplitQuery() 
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null) return NotFound();
@@ -157,7 +157,7 @@ namespace TicketSystem.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Cevabınız eklendi.";
-            return RedirectToAction(nameof(Detail), new { id = model.TicketId });
+            return RedirectToAction(nameof(Detail), new { id = ticket.Id });
         }
 
         // POST: /Ticket/Assign/5 - Destek ekibi üstlenir
