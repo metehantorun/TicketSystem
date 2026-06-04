@@ -99,11 +99,10 @@ namespace TicketSystem.Controllers
             var userId = _userManager.GetUserId(User);
             var isAdmin = User.IsInRole("Admin");
 
+            // 1. Adım: Önce sadece bileti ve temel ilişkilerini çekiyoruz (Güvenli)
             var ticket = await _context.Tickets
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
-                .Include(t => t.Replies).ThenInclude(r => r.Author)
-                .AsSplitQuery() 
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null) return NotFound();
@@ -112,10 +111,17 @@ namespace TicketSystem.Controllers
             if (!isAdmin && ticket.CustomerId != userId)
                 return Forbid();
 
+            // 2. Adım: Bilete ait cevapları ve yazarlarını ayrı bir sorguyla, güvenle çekiyoruz
+            var replies = await _context.TicketReplies
+                .Where(r => r.TicketId == id)
+                .Include(r => r.Author)
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync();
+
             var viewModel = new TicketDetailViewModel
             {
                 Ticket = ticket,
-                Replies = ticket.Replies.OrderBy(r => r.CreatedAt).ToList(),
+                Replies = replies, // Güvenle doldurulan cevap listesi
                 NewReply = new AddReplyViewModel { TicketId = id },
                 IsStaff = isAdmin
             };
