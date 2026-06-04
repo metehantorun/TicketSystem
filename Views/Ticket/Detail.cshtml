@@ -14,7 +14,7 @@
         .custom-dark-card .card-header {
             background-color: #1a1d20 !important;
             border-bottom: 1px solid #2c3034 !important;
-            color: #d0e8ff !important;
+            color: #00aaff !important;
         }
 
         .custom-dark-card .form-control {
@@ -26,6 +26,10 @@
             .custom-dark-card .form-control::placeholder {
                 color: rgba(255, 255, 255, 0.4) !important;
             }
+
+    .ticket-text-body {
+        color: #f8f9fa !important;
+    }
 </style>
 
 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -66,7 +70,7 @@
                 <small style="font-family:monospace;font-size:11px;color:rgba(0,180,255,0.4);">@Model.Ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
             </div>
             <div class="card-body">
-                <p class="mb-0" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@Model.Ticket.Description</p>
+                <p class="mb-0 ticket-text-body" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@Model.Ticket.Description</p>
             </div>
         </div>
 
@@ -74,7 +78,7 @@
         {
         <div class="card shadow mb-3 custom-dark-card" style="@(reply.IsStaffReply ? "border-left:3px solid #00aaff !important;" : "")">
             <div class="card-header d-flex justify-content-between align-items-center"
-                 style="@(reply.IsStaffReply ? "background:rgba(0,10a,255,0.08) !important;" : "")">
+                 style="@(reply.IsStaffReply ? "background:rgba(0,105,255,0.08) !important;" : "")">
                 <div class="d-flex align-items-center gap-2">
                     <div style="width:26px;height:26px;border-radius:6px;background:@(reply.IsStaffReply ? "rgba(0,100,255,0.2)" : "rgba(255,255,255,0.05)");display:flex;align-items:center;justify-content:center;">
                         <i class="bi bi-@(reply.IsStaffReply ? "headset" : "person")" style="font-size:12px;color:#4da6ff;"></i>
@@ -88,7 +92,7 @@
                 <small style="font-family:monospace;font-size:11px;color:rgba(0,180,255,0.4);">@reply.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
             </div>
             <div class="card-body">
-                <p class="mb-0" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@reply.Content</p>
+                <p class="mb-0 ticket-text-body" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@reply.Content</p>
             </div>
         </div>
         }
@@ -109,8 +113,7 @@
                     <input type="hidden" name="NewReply.TicketId" value="@Model.Ticket.Id" />
 
                     <div class="mb-3">
-                        <textarea asp-for="NewReply.Content" class="form-control" rows="4" placeholder="Cevabınızı buraya yazın..."></textarea>
-                        <span asp-validation-for="NewReply.Content" class="text-danger" style="font-size:11px;"></span>
+                        <textarea name="NewReply.Content" id="NewReply_Content" class="form-control" rows="4" placeholder="Cevabınızı buraya yazın..."></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary btn-sm">
                         <i class="bi bi-send me-1"></i>Cevap Gönder
@@ -228,7 +231,3 @@
         </a>
     </div>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

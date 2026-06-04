@@ -26,25 +26,20 @@ namespace TicketSystem.Controllers
             var userId = _userManager.GetUserId(User);
             var isAdmin = User.IsInRole("Admin");
 
-            // Temel sorgu - LINQ ile
             IQueryable<Ticket> query = _context.Tickets
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
                 .Include(t => t.Replies);
 
-            // Müşteri yalnızca kendi taleplerini görür
             if (!isAdmin)
                 query = query.Where(t => t.CustomerId == userId);
 
-            // Durum filtresi (Sadece açık talepleri getir vb.)
             if (filterStatus.HasValue)
                 query = query.Where(t => t.Status == filterStatus.Value);
 
-            // Öncelik filtresi
             if (filterPriority.HasValue)
                 query = query.Where(t => t.Priority == filterPriority.Value);
 
-            // Arama
             if (!string.IsNullOrWhiteSpace(searchTerm))
                 query = query.Where(t => t.Title.Contains(searchTerm) || t.Description.Contains(searchTerm));
 
@@ -99,7 +94,6 @@ namespace TicketSystem.Controllers
             var userId = _userManager.GetUserId(User);
             var isAdmin = User.IsInRole("Admin");
 
-            // 1. Adım: Önce sadece bileti ve temel ilişkilerini çekiyoruz (Güvenli)
             var ticket = await _context.Tickets
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
@@ -107,11 +101,9 @@ namespace TicketSystem.Controllers
 
             if (ticket == null) return NotFound();
 
-            // Müşteri yalnızca kendi talebine erişebilir
             if (!isAdmin && ticket.CustomerId != userId)
                 return Forbid();
 
-            // 2. Adım: Bilete ait cevapları ve yazarlarını ayrı bir sorguyla, güvenle çekiyoruz
             var replies = await _context.TicketReplies
                 .Where(r => r.TicketId == id)
                 .Include(r => r.Author)
@@ -135,7 +127,7 @@ namespace TicketSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddReply(AddReplyViewModel model)
         {
-            // BARKOD KONTROLÜ: Model bağlama aşamasında ID 0 düştüyse, ham form verisinden zorla çekiyoruz
+            // Ham form verisinden ID yakalama garantisi
             if (model.TicketId == 0 && int.TryParse(Request.Form["TicketId"], out int formTicketId))
             {
                 model.TicketId = formTicketId;
@@ -152,6 +144,19 @@ namespace TicketSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Metin içeriğini ham formdan çekerek validation aşamasını tamamen bypass ediyoruz
+            string content = Request.Form["NewReply.Content"].ToString();
+            if (string.IsNullOrEmpty(content))
+            {
+                content = model.Content ?? "";
+            }
+
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                TempData["Error"] = "Cevap metni boş olamaz.";
+                return RedirectToAction(nameof(Detail), new { id = model.TicketId });
+            }
+
             var userId = _userManager.GetUserId(User)!;
             var isAdmin = User.IsInRole("Admin");
 
@@ -159,14 +164,6 @@ namespace TicketSystem.Controllers
             if (ticket == null) return NotFound();
 
             if (!isAdmin && ticket.CustomerId != userId) return Forbid();
-
-            // İçerik kontrolü (Ham form verisi desteğiyle)
-            string content = model.Content ?? Request.Form["NewReply.Content"];
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                TempData["Error"] = "Cevap metni boş olamaz.";
-                return RedirectToAction(nameof(Detail), new { id = model.TicketId });
-            }
 
             var reply = new TicketReply
             {
@@ -185,7 +182,7 @@ namespace TicketSystem.Controllers
             return RedirectToAction(nameof(Detail), new { id = ticket.Id });
         }
 
-        // POST: /Ticket/Assign/5 - Destek ekibi üstlenir
+        // POST: /Ticket/Assign/5
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
@@ -203,7 +200,7 @@ namespace TicketSystem.Controllers
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        // POST: /Ticket/UpdateStatus/5 - Durum güncelleme
+        // POST: /Ticket/UpdateStatus/5
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
@@ -220,7 +217,7 @@ namespace TicketSystem.Controllers
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        // GET: /Ticket/MyTickets - Müşterinin kendi talepleri
+        // GET: /Ticket/MyTickets
         public async Task<IActionResult> MyTickets()
         {
             var userId = _userManager.GetUserId(User);
@@ -243,7 +240,7 @@ namespace TicketSystem.Controllers
             return View(allTickets);
         }
 
-        // POST: /Ticket/Delete/5 - Sadece Admin Talebi Silebilir
+        // POST: /Ticket/Delete/5
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
