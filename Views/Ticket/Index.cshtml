@@ -1,0 +1,158 @@
+@model TicketListViewModel
+@{
+    ViewData["Title"] = "Destek Talepleri";
+    bool isAdmin = ViewBag.IsAdmin ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0066ff,#00aaff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-ticket-perforated" style="color:#fff;font-size:20px;"></i>
+        </div>
+        <div>
+            <h4 class="mb-0 fw-bold" style="color:#d0e8ff;">Destek Talepleri</h4>
+            <div style="font-size:11px;color:rgba(0,180,255,0.5);font-family:monospace;">@Model.Tickets.Count adet talep listeleniyor</div>
+        </div>
+    </div>
+    @if (!isAdmin)
+    {
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus me-1"></i>Yeni Talep
+        </a>
+    }
+</div>
+
+<!-- Filtre -->
+<div class="card shadow mb-4">
+    <div class="card-body py-3">
+        <form asp-action="Index" method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Arama</label>
+                <input type="text" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Başlık veya açıklamada ara..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                @{
+                    var statusVal = Model.FilterStatus.HasValue ? ((int)Model.FilterStatus.Value).ToString() : "";
+                    var statusOptions = new SelectList(new[]
+                    {
+                        new { Value = "", Text = "Tümü" },
+                        new { Value = "0", Text = "Açık" },
+                        new { Value = "1", Text = "Çözüldü" },
+                        new { Value = "2", Text = "Kapandı" }
+                    }, "Value", "Text", statusVal);
+                }
+                @Html.DropDownList("filterStatus", statusOptions, new { @class = "form-select" })
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Öncelik</label>
+                @{
+                    var priorityVal = Model.FilterPriority.HasValue ? ((int)Model.FilterPriority.Value).ToString() : "";
+                    var priorityOptions = new SelectList(new[]
+                    {
+                        new { Value = "", Text = "Tümü" },
+                        new { Value = "0", Text = "Düşük" },
+                        new { Value = "1", Text = "Orta" },
+                        new { Value = "2", Text = "Yüksek" },
+                        new { Value = "3", Text = "Kritik" }
+                    }, "Value", "Text", priorityVal);
+                }
+                @Html.DropDownList("filterPriority", priorityOptions, new { @class = "form-select" })
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill btn-sm">
+                    <i class="bi bi-funnel me-1"></i>Filtrele
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Talep Listesi -->
+@if (!Model.Tickets.Any())
+{
+    <div class="text-center py-5">
+        <div style="width:80px;height:80px;border-radius:16px;background:rgba(0,100,255,0.08);border:1px solid rgba(0,140,255,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i class="bi bi-inbox" style="font-size:2.5rem;color:rgba(0,180,255,0.3);"></i>
+        </div>
+        <p style="color:rgba(0,180,255,0.4);font-family:monospace;font-size:13px;">Gösterilecek talep bulunamadı.</p>
+    </div>
+}
+else
+{
+    <div class="card shadow">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">#</th>
+                        <th>Başlık</th>
+                        @if (isAdmin) { <th>Müşteri</th> }
+                        <th>Durum</th>
+                        <th>Öncelik</th>
+                        <th>Sorumlu</th>
+                        <th>Tarih</th>
+                        <th>Yanıt</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in Model.Tickets)
+                    {
+                        <tr>
+                            <td style="font-family:monospace;font-size:11px;color:rgba(0,180,255,0.45);">#@ticket.Id</td>
+                            <td>
+                                <a asp-action="Detail" asp-route-id="@ticket.Id" style="font-weight:600;color:#d0e8ff;text-decoration:none;font-size:14px;">
+                                    @ticket.Title
+                                </a>
+                            </td>
+                            @if (isAdmin)
+                            {
+                                <td style="font-size:12px;color:rgba(0,180,255,0.55);">@ticket.Customer?.FullName</td>
+                            }
+                            <td>
+                                @{
+                                    var (statusClass, statusIcon, statusText) = ticket.Status switch
+                                    {
+                                        TicketStatus.Acik => ("danger", "exclamation-circle", "Açık"),
+                                        TicketStatus.Cozuldu => ("success", "check-circle", "Çözüldü"),
+                                        TicketStatus.Kapandi => ("secondary", "archive", "Kapandı"),
+                                        _ => ("secondary", "question", ticket.Status.ToString())
+                                    };
+                                }
+                                <span class="badge bg-@statusClass">
+                                    <i class="bi bi-@statusIcon me-1"></i>@statusText
+                                </span>
+                            </td>
+                            <td>
+                                @{
+                                    var (prClass, prText) = ticket.Priority switch
+                                    {
+                                        TicketPriority.Kritik => ("danger", "Kritik"),
+                                        TicketPriority.Yuksek => ("warning", "Yüksek"),
+                                        TicketPriority.Orta => ("info", "Orta"),
+                                        _ => ("secondary", "Düşük")
+                                    };
+                                }
+                                <span class="badge bg-@prClass">@prText</span>
+                            </td>
+                            <td style="font-size:12px;color:rgba(0,180,255,0.45);">@(ticket.SupportAgent?.FullName ?? "—")</td>
+                            <td style="font-size:11px;color:rgba(0,180,255,0.4);font-family:monospace;">@ticket.CreatedAt.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <span class="badge bg-light">
+                                    <i class="bi bi-chat me-1"></i>@ticket.Replies.Count
+                                </span>
+                            </td>
+                            <td>
+                                <a asp-action="Detail" asp-route-id="@ticket.Id" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

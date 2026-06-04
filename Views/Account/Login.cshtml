@@ -1,0 +1,433 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş Yap — Teknik Destek Sistemi</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            min-height:100vh;
+            background: radial-gradient(ellipse at 60% 40%, #0a1628 0%, #050d1a 100%);
+            display:flex; align-items:center; justify-content:center;
+            font-family:'Segoe UI', sans-serif;
+            overflow:hidden; position:relative;
+        }
+
+        .grid-bg {
+            position:fixed; inset:0; pointer-events:none;
+            background-image:
+                linear-gradient(rgba(0,120,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,120,255,0.04) 1px, transparent 1px);
+            background-size:40px 40px;
+        }
+
+        .ping-ring {
+            position:fixed; border-radius:50%;
+            border:1.5px solid rgba(0,180,255,0.25);
+            animation:pingOut 3s ease-out infinite;
+            pointer-events:none;
+        }
+        @@keyframes pingOut {
+            0%   { transform:scale(0.3); opacity:0.7; }
+            100% { transform:scale(3);   opacity:0; }
+        }
+
+        .floating-dots span {
+            position:fixed; background:rgba(0,180,255,0.2); border-radius:50%;
+            animation:floatUp linear infinite; pointer-events:none;
+        }
+        @@keyframes floatUp {
+            0%   { transform:translateY(100vh) scale(0); opacity:0; }
+            10%  { opacity:1; } 90% { opacity:0.3; }
+            100% { transform:translateY(-100px) scale(1.5); opacity:0; }
+        }
+
+        /* ===== KART ===== */
+        .login-card {
+            width:400px; max-width:92vw;
+            background:rgba(10,22,45,0.92);
+            border:1px solid rgba(0,140,255,0.25);
+            border-radius:16px; overflow:hidden;
+            position:relative; z-index:10;
+            box-shadow:0 0 0 1px rgba(0,140,255,0.1), 0 32px 64px rgba(0,0,0,0.7);
+        }
+
+        .card-topbar {
+            background:rgba(0,100,220,0.15);
+            border-bottom:1px solid rgba(0,140,255,0.2);
+            padding:16px 24px;
+            display:flex; align-items:center; gap:14px;
+        }
+        .brand-icon {
+            width:40px; height:40px; border-radius:10px;
+            background:linear-gradient(135deg,#0066ff,#00aaff);
+            display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        }
+        .brand-icon svg { width:22px; height:22px; fill:none; stroke:#fff; stroke-width:2; }
+        .brand-name { font-size:18px; font-weight:800; color:#fff; letter-spacing:-0.3px; }
+        .brand-tag  { font-size:11px; color:rgba(0,180,255,0.7); letter-spacing:1px; margin-top:1px; }
+
+        .signal-bars { margin-left:auto; display:flex; align-items:flex-end; gap:3px; height:20px; }
+        .signal-bars span { width:5px; background:rgba(0,180,255,0.2); border-radius:2px; transition:background 0.3s; }
+        .signal-bars span.active { background:#00aaff; }
+
+        .status-row {
+            display:flex; align-items:center; gap:8px;
+            padding:10px 24px;
+            background:rgba(0,255,120,0.05);
+            border-bottom:1px solid rgba(0,255,120,0.1);
+            font-size:12px; color:rgba(0,255,120,0.8);
+        }
+        .status-dot {
+            width:7px; height:7px; border-radius:50%; background:#00ff88;
+            box-shadow:0 0 6px #00ff88; animation:blink 2s ease-in-out infinite;
+        }
+        @@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .status-ping { margin-left:auto; font-family:monospace; color:rgba(0,180,255,0.6); font-size:11px; }
+
+        .card-body-inner { padding:24px 24px 20px; }
+
+        .section-title {
+            font-size:13px; color:rgba(255,255,255,0.4);
+            text-transform:uppercase; letter-spacing:1.5px;
+            margin-bottom:18px; display:flex; align-items:center; gap:8px;
+        }
+        .section-title::after { content:''; flex:1; height:1px; background:rgba(0,140,255,0.15); }
+
+        .f-label { display:block; font-size:10px; font-weight:700; color:rgba(0,180,255,0.6); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:5px; }
+        .f-input {
+            width:100%; padding:10px 13px;
+            background:rgba(255,255,255,0.05);
+            border:1px solid rgba(0,140,255,0.25);
+            border-radius:8px; font-size:14px; color:#fff; outline:none;
+            font-family:inherit; transition:border-color 0.2s, box-shadow 0.2s;
+        }
+        .f-input:focus { border-color:#0088ff; box-shadow:0 0 0 3px rgba(0,136,255,0.15); }
+        .f-input::placeholder { color:rgba(255,255,255,0.25); }
+
+        .btn-go {
+            width:100%; padding:13px;
+            background:linear-gradient(135deg,#0055cc,#0099ff);
+            color:#fff; border:none; border-radius:9px;
+            font-size:14px; font-weight:700; cursor:pointer; margin-top:8px;
+            letter-spacing:0.5px; transition:opacity 0.2s, transform 0.1s;
+            position:relative; overflow:hidden;
+        }
+        .btn-go:hover  { opacity:0.9; transform:translateY(-1px); }
+        .btn-go:active { transform:translateY(0); }
+        .btn-go::after {
+            content:''; position:absolute; inset:0;
+            background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.08) 50%,transparent 100%);
+            transform:translateX(-100%); animation:sweep 2.5s ease-in-out infinite;
+        }
+        @@keyframes sweep { 0%{transform:translateX(-100%)} 60%,100%{transform:translateX(100%)} }
+
+        .card-footer-inner {
+            padding:12px 24px;
+            border-top:1px solid rgba(0,140,255,0.12);
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        .footer-reg { font-size:12px; color:rgba(255,255,255,0.3); }
+        .footer-reg a { color:#4da6ff; text-decoration:none; font-weight:600; }
+        .footer-reg a:hover { color:#00aaff; }
+
+        .speed-row { display:flex; gap:8px; margin-bottom:20px; }
+        .speed-item {
+            flex:1; background:rgba(0,140,255,0.06); border:1px solid rgba(0,140,255,0.15);
+            border-radius:8px; padding:8px 10px; text-align:center;
+        }
+        .speed-val { font-size:15px; font-weight:800; color:#00aaff; font-family:monospace; }
+        .speed-lbl { font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+
+        .alert-custom {
+            background:rgba(231,76,60,0.12); border:1px solid rgba(231,76,60,0.3);
+            color:#ff6b6b; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px;
+        }
+
+        .remember-row { display:flex; align-items:center; gap:6px; margin-bottom:16px; }
+        .remember-row label { font-size:12px; color:rgba(255,255,255,0.4); cursor:pointer; display:flex; align-items:center; gap:6px; }
+
+        .demo-box {
+            background:rgba(0,140,255,0.06); border:1px solid rgba(0,140,255,0.15);
+            border-radius:8px; padding:10px 14px; margin-top:14px;
+            font-size:11px; color:rgba(255,255,255,0.35); font-family:monospace; line-height:1.9;
+        }
+        .demo-box strong { color:rgba(0,180,255,0.7); }
+
+        /* ===== MODEM KARAKTERİ ===== */
+        .modem-char {
+            position:fixed; bottom:24px; right:28px;
+            width:52px; cursor:none; user-select:none;
+            transform-origin:bottom center;
+            filter:drop-shadow(0 4px 14px rgba(0,136,255,0.5));
+            z-index:50;
+        }
+        .md-body {
+            width:52px; height:62px; background:#0a1628;
+            border:2px solid #0066cc; border-radius:8px 8px 4px 4px;
+            position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+        }
+        .md-top-stripe { position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,#0055cc,#00aaff); border-radius:6px 6px 0 0; }
+        .md-antennas { position:absolute; top:-18px; left:0; right:0; display:flex; justify-content:space-around; }
+        .md-ant { width:3px; height:18px; background:#0077dd; border-radius:2px; transform-origin:bottom center; position:relative; }
+        .md-ant::after {
+            content:''; position:absolute; top:-3px; left:-2px; width:7px; height:7px; border-radius:50%;
+            background:#00aaff; box-shadow:0 0 5px #00aaff; animation:antGlow 1.5s ease-in-out infinite alternate;
+        }
+        .md-ant:nth-child(2)::after { animation-delay:0.5s; }
+        @@keyframes antGlow { from{opacity:0.4} to{opacity:1} }
+        .md-leds { display:flex; gap:5px; }
+        .led { width:7px; height:7px; border-radius:50%; }
+        .led-pwr { background:#00ff88; box-shadow:0 0 5px #00ff88; animation:blink 2s infinite; }
+        .led-net { background:#0099ff; box-shadow:0 0 5px #0099ff; animation:blink 1.1s 0.3s infinite; }
+        .led-sig { background:#ffaa00; box-shadow:0 0 5px #ffaa00; animation:blink 0.8s 0.6s infinite; }
+        .md-screen { width:32px; height:18px; background:#000d1a; border:1px solid #0055cc; border-radius:4px; display:flex; align-items:center; justify-content:center; gap:7px; }
+        .md-eye { width:9px; height:9px; background:#001833; border-radius:50%; position:relative; overflow:hidden; }
+        .md-pupil { width:5px; height:5px; background:#00aaff; border-radius:50%; position:absolute; top:2px; left:2px; transition:transform 0.07s ease-out; box-shadow:0 0 4px #00aaff; }
+        .md-stub { width:52px; height:13px; background:#05101f; border:2px solid #0066cc; border-top:none; border-radius:0 0 5px 5px; position:relative; }
+        .md-port { position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:14px; height:5px; background:#001833; border:1px solid #0055cc; border-radius:1px; }
+        .md-legs { display:flex; justify-content:center; gap:10px; }
+        .md-leg { width:7px; height:18px; background:#0066cc; border-radius:3px; transform-origin:top center; }
+        .md-foot { width:13px; height:6px; background:#004499; border-radius:0 4px 4px 0; margin-top:-2px; margin-left:-2px; }
+
+        .walking .md-leg-l { animation:wL .42s ease-in-out infinite alternate; }
+        .walking .md-leg-r { animation:wR .42s ease-in-out infinite alternate; }
+        .walking .md-body  { animation:bob .42s ease-in-out infinite alternate; }
+        .walking .md-ant   { animation:antShake .21s ease-in-out infinite alternate; }
+        .idle    .md-body  { animation:idl 1.3s ease-in-out infinite alternate; }
+        @@keyframes wL { from{transform:rotate(-25deg)} to{transform:rotate(25deg)} }
+        @@keyframes wR { from{transform:rotate(25deg)}  to{transform:rotate(-25deg)} }
+        @@keyframes bob { from{transform:translateY(0)} to{transform:translateY(-3px)} }
+        @@keyframes idl { from{transform:translateY(0) rotate(-1.5deg)} to{transform:translateY(-4px) rotate(1.5deg)} }
+        @@keyframes antShake { from{transform:rotate(-8deg)} to{transform:rotate(8deg)} }
+
+        .speech {
+            position:fixed; background:rgba(0,20,50,0.95); border:1px solid rgba(0,140,255,0.4);
+            border-radius:8px 8px 2px 8px; padding:5px 9px; font-size:11px;
+            color:#7dd3fc; white-space:nowrap; font-family:monospace;
+            opacity:0; transform:scale(0.8); transform-origin:bottom right;
+            transition:opacity 0.2s,transform 0.2s; pointer-events:none; z-index:60;
+        }
+        .speech.show { opacity:1; transform:scale(1); }
+    </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="floating-dots" id="dots"></div>
+
+<div class="ping-ring" style="width:160px;height:160px;top:40px;left:40px;animation-delay:0s"></div>
+<div class="ping-ring" style="width:100px;height:100px;top:70px;left:70px;animation-delay:1s"></div>
+<div class="ping-ring" style="width:130px;height:130px;bottom:60px;right:120px;animation-delay:0.5s"></div>
+
+<div class="speech" id="speech">Bağlantı kuruyorum...</div>
+
+<!-- Modem Karakteri -->
+<div class="modem-char idle" id="modemChar">
+    <div class="md-body" id="mdBody">
+        <div class="md-top-stripe"></div>
+        <div class="md-antennas">
+            <div class="md-ant"></div>
+            <div class="md-ant"></div>
+        </div>
+        <div class="md-leds">
+            <div class="led led-pwr"></div>
+            <div class="led led-net"></div>
+            <div class="led led-sig"></div>
+        </div>
+        <div class="md-screen">
+            <div class="md-eye"><div class="md-pupil" id="p1"></div></div>
+            <div class="md-eye"><div class="md-pupil" id="p2"></div></div>
+        </div>
+    </div>
+    <div class="md-stub"><div class="md-port"></div></div>
+    <div class="md-legs">
+        <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="md-leg md-leg-l"></div><div class="md-foot"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="md-leg md-leg-r"></div><div class="md-foot" style="transform:scaleX(-1)"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Kartı -->
+<div class="login-card">
+    <div class="card-topbar">
+        <div class="brand-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke-dasharray="4 2"/><path d="M4.9 4.9C7 7 9.4 8 12 8s5-1 7.1-3.1M4.9 19.1C7 17 9.4 16 12 16s5 1 7.1 3.1"/></svg>
+        </div>
+        <div>
+            <div class="brand-name">Teknik Destek</div>
+            <div class="brand-tag">DESTEK PORTALI</div>
+        </div>
+        <div class="signal-bars" id="signalBars">
+            <span style="height:6px"></span>
+            <span style="height:10px"></span>
+            <span style="height:14px"></span>
+            <span style="height:18px"></span>
+            <span style="height:22px"></span>
+        </div>
+    </div>
+
+    <div class="status-row">
+        <div class="status-dot"></div>
+        <span>Sistem aktif — Tüm hatlar açık</span>
+        <span class="status-ping" id="pingVal">ping: 12ms</span>
+    </div>
+
+    <div class="card-body-inner">
+        <div class="section-title">Müşteri Girişi</div>
+
+        <div class="speed-row">
+            <div class="speed-item">
+                <div class="speed-val" id="dlSpeed">↓ 94</div>
+                <div class="speed-lbl">Mbps İndirme</div>
+            </div>
+            <div class="speed-item">
+                <div class="speed-val" id="ulSpeed">↑ 47</div>
+                <div class="speed-lbl">Mbps Yükleme</div>
+            </div>
+            <div class="speed-item">
+                <div class="speed-val">%99.9</div>
+                <div class="speed-lbl">Uptime</div>
+            </div>
+        </div>
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+            @if (!ViewContext.ModelState.IsValid)
+            {
+                <div class="alert-custom">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div style="margin-bottom:13px">
+                <label class="f-label">E-Posta</label>
+                <input asp-for="Email" class="f-input" placeholder="ornek@email.com" autocomplete="email" />
+                <span asp-validation-for="Email" style="font-size:11px;color:#ff6b6b;"></span>
+            </div>
+
+            <div style="margin-bottom:16px">
+                <label class="f-label">Şifre</label>
+                <input asp-for="Password" class="f-input" placeholder="••••••••" autocomplete="current-password" />
+                <span asp-validation-for="Password" style="font-size:11px;color:#ff6b6b;"></span>
+            </div>
+
+            <div class="remember-row">
+                <label>
+                    <input asp-for="RememberMe" type="checkbox" style="accent-color:#0099ff;" />
+                    Beni hatırla
+                </label>
+            </div>
+
+            <button type="submit" class="btn-go">BAĞLAN — Sisteme Giriş →</button>
+        </form>
+
+        <div class="demo-box">
+            <strong>Admin:</strong> admin@@ticketsystem.com / Admin123!<br />
+            <strong>Müşteri:</strong> musteri@@ticketsystem.com / User123!
+        </div>
+    </div>
+
+    <div class="card-footer-inner">
+        <span class="footer-reg">Hesabın yok mu? <a asp-controller="Account" asp-action="Register">Kayıt ol</a></span>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    const modem  = document.getElementById('modemChar');
+    const speech = document.getElementById('speech');
+    const p1     = document.getElementById('p1');
+    const p2     = document.getElementById('p2');
+
+    const phrases = ['Bağlantı kuruyorum...','Ping: 4ms ✓','Hat aktif!','Nasıl yardımcı olabilirim?','Sinyal güçlü 📶'];
+    let phraseIdx=0, speechTimer, moveTimer;
+    let charX = window.innerWidth - 65, charY = window.innerHeight - 100;
+
+    function applyPos() {
+        modem.style.right='auto'; modem.style.bottom='auto';
+        modem.style.left=(charX-26)+'px'; modem.style.top=(charY-75)+'px';
+    }
+    applyPos();
+
+    function showSpeech() {
+        speech.textContent = phrases[phraseIdx++ % phrases.length];
+        const cr = modem.getBoundingClientRect();
+        speech.style.left=(cr.left-10)+'px';
+        speech.style.top =(cr.top -32)+'px';
+        speech.classList.add('show');
+        clearTimeout(speechTimer);
+        speechTimer = setTimeout(()=>speech.classList.remove('show'), 2500);
+    }
+
+    // Partiküller
+    const dotsEl=document.getElementById('dots');
+    for(let i=0;i<20;i++){
+        const s=document.createElement('span');
+        s.style.cssText=`left:${Math.random()*100}%;bottom:-10px;animation-duration:${5+Math.random()*7}s;animation-delay:${Math.random()*7}s;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px`;
+        dotsEl.appendChild(s);
+    }
+
+    // Sinyal animasyonu
+    const bars=document.querySelectorAll('#signalBars span');
+    let sigLevel=4;
+    setInterval(()=>{
+        sigLevel=Math.max(2,Math.min(5,sigLevel+(Math.random()>0.5?1:-1)));
+        bars.forEach((b,i)=>b.classList.toggle('active',i<sigLevel));
+    },1800);
+    bars.forEach((b,i)=>b.classList.toggle('active',i<4));
+
+    // Ping & hız animasyonu
+    setInterval(()=>{
+        document.getElementById('pingVal').textContent='ping: '+Math.floor(8+Math.random()*20)+'ms';
+        document.getElementById('dlSpeed').textContent='↓ '+Math.floor(80+Math.random()*40);
+        document.getElementById('ulSpeed').textContent='↑ '+Math.floor(35+Math.random()*25);
+    },2000);
+
+    document.addEventListener('mousemove',function(e){
+        [p1,p2].forEach(pupil=>{
+            const eye=pupil.closest('.md-eye');
+            const er=eye.getBoundingClientRect();
+            const ex=er.left+er.width/2, ey=er.top+er.height/2;
+            const dx=e.clientX-ex, dy=e.clientY-ey;
+            const dist=Math.sqrt(dx*dx+dy*dy);
+            const f=Math.min(dist,50)/50, max=2.5;
+            pupil.style.transform=`translate(${(dx/(dist||1))*max*f}px,${(dy/(dist||1))*max*f}px)`;
+        });
+
+        const dx=e.clientX-charX, dy=e.clientY-charY;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist>10){
+            modem.classList.remove('idle'); modem.classList.add('walking');
+            clearTimeout(moveTimer);
+            charX+=dx*0.045; charY+=dy*0.045;
+            charX=Math.max(26,Math.min(window.innerWidth-65,charX));
+            charY=Math.max(80,Math.min(window.innerHeight-30,charY));
+            applyPos();
+            modem.style.transform=dx<0?'scaleX(-1)':'scaleX(1)';
+            moveTimer=setTimeout(()=>{
+                modem.classList.remove('walking'); modem.classList.add('idle');
+                showSpeech();
+            },420);
+        }
+    });
+
+    setTimeout(showSpeech,1400);
+</script>
+</body>
+</html>

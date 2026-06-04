@@ -1,0 +1,133 @@
+@{
+    ViewData["Title"] = "Ana Sayfa";
+    bool isAdmin = ViewBag.IsAdmin ?? false;
+}
+
+<!-- Başlık -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0066ff,#00aaff);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="bi bi-speedometer2" style="color:#fff;font-size:20px;"></i>
+    </div>
+    <div>
+        <h4 class="mb-0 fw-bold" style="color:#d0e8ff;">
+            Hoş Geldiniz, @ViewBag.UserName
+            @if (isAdmin)
+            {
+                <span class="badge badge-admin ms-2" style="font-size:10px;">YÖNETİCİ</span>
+            }
+        </h4>
+        <div style="font-size:11px;color:rgba(0,180,255,0.5);font-family:monospace;margin-top:2px;">
+            <span style="color:rgba(0,255,136,0.6)">●</span> Bağlı — Teknik Destek Paneli
+        </div>
+    </div>
+</div>
+
+<!-- İstatistik Kartları -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.4rem;font-weight:900;color:#4da6ff;font-family:monospace;">@ViewBag.TotalTickets</div>
+                <div style="font-size:11px;color:rgba(0,180,255,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;">
+                    <i class="bi bi-ticket-perforated me-1"></i>Toplam Talep
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100" style="border-left:3px solid rgba(255,80,80,0.6) !important;">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.4rem;font-weight:900;color:#ff6b6b;font-family:monospace;">@ViewBag.OpenTickets</div>
+                <div style="font-size:11px;color:rgba(255,100,100,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;">
+                    <i class="bi bi-exclamation-circle me-1"></i>Açık
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100" style="border-left:3px solid rgba(0,200,80,0.5) !important;">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.4rem;font-weight:900;color:#00e676;font-family:monospace;">@ViewBag.SolvedTickets</div>
+                <div style="font-size:11px;color:rgba(0,200,80,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;">
+                    <i class="bi bi-check-circle me-1"></i>Çözüldü
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100" style="border-left:3px solid rgba(100,130,170,0.4) !important;">
+            <div class="card-body text-center py-4">
+                <div style="font-size:2.4rem;font-weight:900;color:rgba(150,180,220,0.7);font-family:monospace;">@ViewBag.ClosedTickets</div>
+                <div style="font-size:11px;color:rgba(100,140,180,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px;">
+                    <i class="bi bi-archive me-1"></i>Kapandı
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hızlı Erişim -->
+<div class="row g-3">
+    @if (!isAdmin)
+    {
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <div style="width:56px;height:56px;border-radius:12px;background:rgba(0,100,255,0.12);border:1px solid rgba(0,140,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                        <i class="bi bi-plus-circle-fill" style="font-size:1.8rem;color:#4da6ff;"></i>
+                    </div>
+                    <h6 style="color:#d0e8ff;font-weight:700;">Yeni Destek Talebi</h6>
+                    <p style="font-size:13px;color:rgba(0,180,255,0.45);">Bir sorun mu yaşıyorsunuz? Destek ekibimize ulaşın.</p>
+                    <a asp-controller="Ticket" asp-action="Create" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus me-1"></i>Talep Oluştur
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <div style="width:56px;height:56px;border-radius:12px;background:rgba(0,180,80,0.08);border:1px solid rgba(0,200,80,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                        <i class="bi bi-list-check" style="font-size:1.8rem;color:#00e676;"></i>
+                    </div>
+                    <h6 style="color:#d0e8ff;font-weight:700;">Taleplerim</h6>
+                    <p style="font-size:13px;color:rgba(0,180,255,0.45);">Tüm destek taleplerinizi görüntüleyin ve takip edin.</p>
+                    <a asp-controller="Ticket" asp-action="MyTickets" class="btn btn-success btn-sm">
+                        <i class="bi bi-eye me-1"></i>Taleplerime Git
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <div style="width:56px;height:56px;border-radius:12px;background:rgba(0,100,255,0.12);border:1px solid rgba(0,140,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                        <i class="bi bi-list-ul" style="font-size:1.8rem;color:#4da6ff;"></i>
+                    </div>
+                    <h6 style="color:#d0e8ff;font-weight:700;">Tüm Talepler</h6>
+                    <p style="font-size:13px;color:rgba(0,180,255,0.45);">Tüm destek taleplerini görüntüleyin ve yönetin.</p>
+                    <a asp-controller="Ticket" asp-action="Index" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-right me-1"></i>Taleplere Git
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <div style="width:56px;height:56px;border-radius:12px;background:rgba(200,130,0,0.08);border:1px solid rgba(200,130,0,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                        <i class="bi bi-funnel" style="font-size:1.8rem;color:#ffaa00;"></i>
+                    </div>
+                    <h6 style="color:#d0e8ff;font-weight:700;">Açık Talepler</h6>
+                    <p style="font-size:13px;color:rgba(0,180,255,0.45);">Yalnızca açık talepleri filtreleyin ve işleme alın.</p>
+                    <a asp-controller="Ticket" asp-action="Index" asp-route-filterStatus="0" class="btn btn-warning btn-sm">
+                        <i class="bi bi-filter me-1"></i>Açıkları Göster
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,63 @@
+@model CreateTicketViewModel
+@{
+    ViewData["Title"] = "Yeni Destek Talebi";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#0066ff,#00aaff);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-plus-circle" style="color:#fff;font-size:14px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:800;color:#d0e8ff;font-size:14px;">Yeni Destek Talebi Oluştur</div>
+                        <div style="font-size:9px;color:rgba(0,180,255,0.6);text-transform:uppercase;letter-spacing:1px;">Yeni ticket aç</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Başlık</label>
+                        <input asp-for="Title" class="form-control" placeholder="Sorununuzu kısaca özetleyin..." />
+                        <span asp-validation-for="Title" class="text-danger" style="font-size:11px;"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Açıklama</label>
+                        <textarea asp-for="Description" class="form-control" rows="6"
+                                  placeholder="Sorununuzu detaylı olarak açıklayın..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger" style="font-size:11px;"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Priority" class="form-label">Öncelik</label>
+                        <select asp-for="Priority" class="form-select">
+                            <option value="0">Düşük — Acil değil</option>
+                            <option value="1" selected>Orta — Normal</option>
+                            <option value="2">Yüksek — Önemli</option>
+                            <option value="3">Kritik — İş durdu!</option>
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger" style="font-size:11px;"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>Talep Gönder
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

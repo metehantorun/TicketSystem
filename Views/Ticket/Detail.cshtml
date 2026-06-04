@@ -1,0 +1,213 @@
+@model TicketDetailViewModel
+@{
+    ViewData["Title"] = $"Talep #{Model.Ticket.Id}";
+    bool isAdmin = ViewBag.IsAdmin ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="Index">Talepler</a></li>
+                <li class="breadcrumb-item active" style="color:rgba(0,180,255,0.4);">Talep #@Model.Ticket.Id</li>
+            </ol>
+        </nav>
+        <h5 class="fw-bold mb-0" style="color:#d0e8ff;">@Model.Ticket.Title</h5>
+    </div>
+    <div class="text-end">
+        @{
+            var (statusClass, statusText) = Model.Ticket.Status switch
+            {
+                TicketStatus.Acik => ("danger", "Açık"),
+                TicketStatus.Cozuldu => ("success", "Çözüldü"),
+                TicketStatus.Kapandi => ("secondary", "Kapandı"),
+                _ => ("secondary", Model.Ticket.Status.ToString())
+            };
+        }
+        <span class="badge bg-@statusClass" style="font-size:12px;padding:6px 12px;">@statusText</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sol: Konuşma -->
+    <div class="col-lg-8">
+        <!-- Orijinal Talep -->
+        <div class="card shadow mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:26px;height:26px;border-radius:6px;background:rgba(0,100,255,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-person" style="font-size:12px;color:#4da6ff;"></i>
+                    </div>
+                    <strong style="color:#d0e8ff;font-size:13px;">@Model.Ticket.Customer?.FullName</strong>
+                    <span class="badge bg-secondary" style="font-size:9px;">Müşteri</span>
+                </div>
+                <small style="font-family:monospace;font-size:11px;color:rgba(0,180,255,0.4);">@Model.Ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+            </div>
+            <div class="card-body">
+                <p class="mb-0" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@Model.Ticket.Description</p>
+            </div>
+        </div>
+
+        <!-- Cevaplar -->
+        @foreach (var reply in Model.Replies)
+        {
+            <div class="card shadow mb-3" style="@(reply.IsStaffReply ? "border-left:3px solid rgba(0,140,255,0.5) !important;" : "")">
+                <div class="card-header d-flex justify-content-between align-items-center"
+                     style="@(reply.IsStaffReply ? "background:rgba(0,80,200,0.15) !important;" : "")">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:26px;height:26px;border-radius:6px;background:@(reply.IsStaffReply ? "rgba(0,100,255,0.2)" : "rgba(0,60,100,0.2)");display:flex;align-items:center;justify-content:center;">
+                            <i class="bi bi-@(reply.IsStaffReply ? "headset" : "person")" style="font-size:12px;color:#4da6ff;"></i>
+                        </div>
+                        <strong style="color:#d0e8ff;font-size:13px;">@reply.Author?.FullName</strong>
+                        @if (reply.IsStaffReply)
+                        {
+                            <span class="badge bg-primary" style="font-size:9px;">Destek Ekibi</span>
+                        }
+                    </div>
+                    <small style="font-family:monospace;font-size:11px;color:rgba(0,180,255,0.4);">@reply.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" style="white-space:pre-wrap;font-size:14px;line-height:1.7;">@reply.Content</p>
+                </div>
+            </div>
+        }
+
+        <!-- Cevap Formu -->
+        @if (Model.Ticket.Status != TicketStatus.Kapandi)
+        {
+            <div class="card shadow">
+                <div class="card-header">
+                    <span style="font-size:13px;font-weight:700;color:#d0e8ff;">
+                        <i class="bi bi-reply me-2" style="color:#4da6ff;"></i>Cevap Yaz
+                    </span>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AddReply" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="NewReply.TicketId" />
+                        <div class="mb-3">
+                            <textarea asp-for="NewReply.Content" class="form-control" rows="4" placeholder="Cevabınızı buraya yazın..."></textarea>
+                            <span asp-validation-for="NewReply.Content" class="text-danger" style="font-size:11px;"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-send me-1"></i>Cevap Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Sağ: Bilgi Paneli -->
+    <div class="col-lg-4">
+        <div class="card shadow mb-3">
+            <div class="card-header">
+                <span style="font-size:12px;font-weight:700;color:rgba(0,180,255,0.7);text-transform:uppercase;letter-spacing:0.8px;">
+                    <i class="bi bi-info-circle me-2"></i>Talep Bilgileri
+                </span>
+            </div>
+            <div class="card-body" style="font-size:13px;">
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Talep No</span>
+                    <span style="font-family:monospace;color:#7dd3fc;">#@Model.Ticket.Id</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Durum</span>
+                    <span class="badge bg-@statusClass">@statusText</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Öncelik</span>
+                    <span>
+                        @{
+                            var (prClass, prText) = Model.Ticket.Priority switch
+                            {
+                                TicketPriority.Kritik => ("danger", "Kritik"),
+                                TicketPriority.Yuksek => ("warning", "Yüksek"),
+                                TicketPriority.Orta => ("info", "Orta"),
+                                _ => ("secondary", "Düşük")
+                            };
+                        }
+                        <span class="badge bg-@prClass">@prText</span>
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Müşteri</span>
+                    <span style="color:#d0e8ff;">@Model.Ticket.Customer?.FullName</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Sorumlu</span>
+                    <span style="color:#d0e8ff;">@(Model.Ticket.SupportAgent?.FullName ?? "Atanmadı")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 py-1" style="border-bottom:1px solid rgba(0,140,255,0.08);">
+                    <span style="color:rgba(0,180,255,0.5);">Oluşturuldu</span>
+                    <span style="font-family:monospace;font-size:11px;color:#7dd3fc;">@Model.Ticket.CreatedAt.ToString("dd.MM.yyyy")</span>
+                </div>
+                @if (Model.Ticket.UpdatedAt.HasValue)
+                {
+                    <div class="d-flex justify-content-between py-1">
+                        <span style="color:rgba(0,180,255,0.5);">Güncellendi</span>
+                        <span style="font-family:monospace;font-size:11px;color:#7dd3fc;">@Model.Ticket.UpdatedAt.Value.ToString("dd.MM.yyyy")</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Admin İşlemleri -->
+        @if (isAdmin)
+        {
+            <div class="card shadow mb-3">
+                <div class="card-header">
+                    <span style="font-size:12px;font-weight:700;color:rgba(255,170,0,0.7);text-transform:uppercase;letter-spacing:0.8px;">
+                        <i class="bi bi-gear me-2"></i>Yönetici İşlemleri
+                    </span>
+                </div>
+                <div class="card-body">
+                    @if (Model.Ticket.SupportAgentId == null)
+                    {
+                        <form asp-action="Assign" asp-route-id="@Model.Ticket.Id" method="post" class="mb-3">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="bi bi-person-check me-1"></i>Talebi Üstlen
+                            </button>
+                        </form>
+                    }
+                    <div style="font-size:11px;color:rgba(0,180,255,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Durum Güncelle</div>
+                    <div class="d-flex flex-column gap-2">
+                        <form asp-action="UpdateStatus" asp-route-id="@Model.Ticket.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="status" value="0" />
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                                    @(Model.Ticket.Status == TicketStatus.Acik ? "disabled" : "")>
+                                <i class="bi bi-exclamation-circle me-1"></i>Açık
+                            </button>
+                        </form>
+                        <form asp-action="UpdateStatus" asp-route-id="@Model.Ticket.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="status" value="1" />
+                            <button type="submit" class="btn btn-outline-success btn-sm w-100"
+                                    @(Model.Ticket.Status == TicketStatus.Cozuldu ? "disabled" : "")>
+                                <i class="bi bi-check-circle me-1"></i>Çözüldü
+                            </button>
+                        </form>
+                        <form asp-action="UpdateStatus" asp-route-id="@Model.Ticket.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="status" value="2" />
+                            <button type="submit" class="btn btn-outline-secondary btn-sm w-100"
+                                    @(Model.Ticket.Status == TicketStatus.Kapandi ? "disabled" : "")>
+                                <i class="bi bi-archive me-1"></i>Kapat
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <a asp-action="Index" class="btn btn-outline-secondary w-100 btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
