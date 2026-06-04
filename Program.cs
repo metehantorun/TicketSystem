@@ -3,14 +3,16 @@ using Microsoft.EntityFrameworkCore;
 using TicketSystem.Data;
 using TicketSystem.Models;
 
+// Npgsql için DateTime UTC çakışmasını çözen kritik anahtar
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // --- GÜNCELLEME: Render için Port Yapılandırması ---
-// Render, uygulamaların çevre değişkeninden (Environment Variable) gelen PORT bilgisini dinlemesini ister.
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://*:{port}");
 
-// --- GÜNCELLEME: Veritabanı - SQL Server yerine PostgreSQL ---
+// --- GÜNCELLEME: Veritabanı - PostgreSQL ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -27,13 +29,15 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-// Cookie ayarları
+// --- GÜNCELLEME: Cookie Güvenlik Ayarları (HTTPS Zorunluluğu) ---
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    // Render HTTPS kullandığı için giriş çerezini güvenli moda alıyoruz
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 builder.Services.AddControllersWithViews();
@@ -47,9 +51,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Render proxy arkasında çalıştığı için SSL döngüsünü engellemek adına 
+// eğer lokalde değilseniz yönlendirmeyi esnetebiliriz, şimdilik standart kalsın
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-builder.WebHost.UseUrls($"http://*:{port}"); // Çift garanti olması adına pipeline öncesi de ekledik
+
+// Hatalı yerdeki builder.WebHost.UseUrls satırı buradan kaldırıldı!
+
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -64,7 +72,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Database.Migrate(); // Bu satır PostgreSQL şemasını bulutta otomatik oluşturacak!
+        db.Database.Migrate();
         await DbSeeder.SeedRolesAndUsersAsync(scope.ServiceProvider);
     }
     catch (Exception ex)
