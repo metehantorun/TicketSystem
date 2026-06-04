@@ -83,7 +83,7 @@ namespace TicketSystem.Controllers
                 Priority = model.Priority,
                 CustomerId = userId,
                 Status = TicketStatus.Acik,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow // GÜNCELLEME: PostgreSQL için UTC formatına çekildi
             };
 
             _context.Tickets.Add(ticket);
@@ -99,10 +99,12 @@ namespace TicketSystem.Controllers
             var userId = _userManager.GetUserId(User);
             var isAdmin = User.IsInRole("Admin");
 
+            // GÜNCELLEME: .AsSplitQuery() eklenerek PostgreSQL'i kilitleyen devasa JOIN sorgusu parçalara bölündü.
             var ticket = await _context.Tickets
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
                 .Include(t => t.Replies).ThenInclude(r => r.Author)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null) return NotFound();
@@ -148,11 +150,11 @@ namespace TicketSystem.Controllers
                 Content = model.Content,
                 AuthorId = userId,
                 IsStaffReply = isAdmin,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
             };
 
             _context.TicketReplies.Add(reply);
-            ticket.UpdatedAt = DateTime.Now;
+            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Cevabınız eklendi.";
@@ -170,7 +172,7 @@ namespace TicketSystem.Controllers
 
             var userId = _userManager.GetUserId(User)!;
             ticket.SupportAgentId = userId;
-            ticket.UpdatedAt = DateTime.Now;
+            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Talep üzerinize atandı.";
@@ -187,7 +189,7 @@ namespace TicketSystem.Controllers
             if (ticket == null) return NotFound();
 
             ticket.Status = status;
-            ticket.UpdatedAt = DateTime.Now;
+            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
             await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Talep durumu '{GetStatusDisplayName(status)}' olarak güncellendi.";
@@ -226,4 +228,28 @@ namespace TicketSystem.Controllers
             _ => status.ToString()
         };
     }
-}
+    // POST: /Ticket/Delete/5 - Sadece Admin Talebi Silebilir
+[HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.Replies) // Önce biletin altındaki cevapları bağlıyoruz
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (ticket == null) return NotFound();
+
+            // PostgreSQL ilişkisel veri koruması nedeniyle önce bilete ait cevapları siliyoruz
+            if (ticket.Replies != null && ticket.Replies.Any())
+            {
+                _context.TicketReplies.RemoveRange(ticket.Replies);
+            }
+
+            _context.Tickets.Remove(ticket);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Destek talebi ve bağlı tüm mesajlar başarıyla silindi.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
