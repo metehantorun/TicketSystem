@@ -121,7 +121,7 @@ namespace TicketSystem.Controllers
             var viewModel = new TicketDetailViewModel
             {
                 Ticket = ticket,
-                Replies = replies, // Güvenle doldurulan cevap listesi
+                Replies = replies,
                 NewReply = new AddReplyViewModel { TicketId = id },
                 IsStaff = isAdmin
             };
@@ -135,10 +135,21 @@ namespace TicketSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddReply(AddReplyViewModel model)
         {
-            if (!ModelState.IsValid)
+            // BARKOD KONTROLÜ: Model bağlama aşamasında ID 0 düştüyse, ham form verisinden zorla çekiyoruz
+            if (model.TicketId == 0 && int.TryParse(Request.Form["TicketId"], out int formTicketId))
             {
-                TempData["Error"] = "Cevap metni boş olamaz.";
-                return RedirectToAction(nameof(Detail), new { id = model.TicketId });
+                model.TicketId = formTicketId;
+            }
+
+            if (model.TicketId == 0 && int.TryParse(Request.Form["NewReply.TicketId"], out int altTicketId))
+            {
+                model.TicketId = altTicketId;
+            }
+
+            if (model.TicketId == 0)
+            {
+                TempData["Error"] = "Sistem bilet numarasını doğrulayamadı.";
+                return RedirectToAction(nameof(Index));
             }
 
             var userId = _userManager.GetUserId(User)!;
@@ -149,10 +160,18 @@ namespace TicketSystem.Controllers
 
             if (!isAdmin && ticket.CustomerId != userId) return Forbid();
 
+            // İçerik kontrolü (Ham form verisi desteğiyle)
+            string content = model.Content ?? Request.Form["NewReply.Content"];
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                TempData["Error"] = "Cevap metni boş olamaz.";
+                return RedirectToAction(nameof(Detail), new { id = model.TicketId });
+            }
+
             var reply = new TicketReply
             {
                 TicketId = model.TicketId,
-                Content = model.Content,
+                Content = content,
                 AuthorId = userId,
                 IsStaffReply = isAdmin,
                 CreatedAt = DateTime.UtcNow

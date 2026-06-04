@@ -105,7 +105,8 @@
                 <form asp-action="AddReply" method="post">
                     @Html.AntiForgeryToken()
 
-                    <input type="hidden" asp-for="NewReply.TicketId" value="@Model.Ticket.Id" />
+                    <input type="hidden" name="TicketId" value="@Model.Ticket.Id" />
+                    <input type="hidden" name="NewReply.TicketId" value="@Model.Ticket.Id" />
 
                     <div class="mb-3">
                         <textarea asp-for="NewReply.Content" class="form-control" rows="4" placeholder="Cevabınızı buraya yazın..."></textarea>
