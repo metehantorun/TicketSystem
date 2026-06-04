@@ -6,6 +6,13 @@
 ## Proje Hakkında
 
 Bu proje, müşterilerin destek talebi oluşturabildiği, destek ekibinin talepleri yönettiği tam işlevli bir **Teknik Destek (Ticket) Sistemi**dir.
+---
+
+## 🚀 Canlı Demo
+Projenin bulut üzerinde çalışan canlı sürümüne aşağıdaki bağlantıdan erişebilirsiniz:
+👉 **[Canlı Proje Linki](https://ticket-system-web-orgd.onrender.com/)**
+
+> **Not:** Proje Render'ın ücretsiz katmanında barındığı için, uzun süre istek gelmediğinde sunucu uyku moduna geçer. İlk açılışta sitenin yüklenmesi 30-50 saniye sürebilir.
 
 ---
 
@@ -14,7 +21,8 @@ Bu proje, müşterilerin destek talebi oluşturabildiği, destek ekibinin talepl
 ### ✅ 1. Veritabanı
 - **EF Core Code-First** yaklaşımı kullanılmıştır.
 - `AppDbContext` ile `DbContext` yapılandırması tamamlanmıştır.
-- `dotnet ef migrations add` ile Migration oluşturulur.
+- **Hibrit Veritabanı Desteği:** Yerel geliştirmede SQL Server, canlı ortamda (Production) ise **PostgreSQL (Render/Supabase)** entegrasyonu sağlanmıştır.
+- `db.Database.Migrate()` komutu sayesinde bulut sunucusunda şemalar otomatik oluşturulur.
 
 ### ✅ 2. Authentication & Authorization
 - **ASP.NET Core Identity** kullanılmıştır.
@@ -125,6 +133,11 @@ dotnet run
 
 > **Not:** `Program.cs` içindeki `DbSeeder` otomatik olarak veritabanını oluşturur ve seed eder.
 
+### 🐳 Docker ile Canlı Ortam (Production) Dağıtımı
+Proje, bulut ortamında (Render) barındırılmak üzere Dockerize edilmiştir. 
+Kök dizindeki `Dockerfile` ile .NET 8 SDK imajı kullanılarak optimize edilmiş bir `Release` çıktısı alınır ve minimum kaynak tüketimiyle yayınlanır.
+Canlı ortamda veritabanı mimarisi olarak PostgreSQL entegrasyonu tercih edilmiştir.
+
 ### Varsayılan Giriş Bilgileri
 
 | Rol | Email | Şifre |
@@ -153,7 +166,8 @@ dotnet run
 - ASP.NET Core MVC 8
 - Entity Framework Core 8 (Code-First)
 - ASP.NET Core Identity
-- Bootstrap 5.3
-- Bootstrap Icons
+- **Npgsql.EntityFrameworkCore.PostgreSQL 8.0.4**
+- **Docker & Dockerfile**
+- **Render Cloud Services** (Web App & Managed PostgreSQL)
+- Bootstrap 5.3 & Bootstrap Icons
 - jQuery Validation (unobtrusive)
-- SQL Server (LocalDB)
