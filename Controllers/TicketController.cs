@@ -83,7 +83,7 @@ namespace TicketSystem.Controllers
                 Priority = model.Priority,
                 CustomerId = userId,
                 Status = TicketStatus.Acik,
-                CreatedAt = DateTime.UtcNow // GÜNCELLEME: PostgreSQL için UTC formatına çekildi
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Tickets.Add(ticket);
@@ -99,7 +99,6 @@ namespace TicketSystem.Controllers
             var userId = _userManager.GetUserId(User);
             var isAdmin = User.IsInRole("Admin");
 
-            // GÜNCELLEME: .AsSplitQuery() eklenerek PostgreSQL'i kilitleyen devasa JOIN sorgusu parçalara bölündü.
             var ticket = await _context.Tickets
                 .Include(t => t.Customer)
                 .Include(t => t.SupportAgent)
@@ -150,11 +149,11 @@ namespace TicketSystem.Controllers
                 Content = model.Content,
                 AuthorId = userId,
                 IsStaffReply = isAdmin,
-                CreatedAt = DateTime.UtcNow // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.TicketReplies.Add(reply);
-            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
+            ticket.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Cevabınız eklendi.";
@@ -172,7 +171,7 @@ namespace TicketSystem.Controllers
 
             var userId = _userManager.GetUserId(User)!;
             ticket.SupportAgentId = userId;
-            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
+            ticket.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Talep üzerinize atandı.";
@@ -189,7 +188,7 @@ namespace TicketSystem.Controllers
             if (ticket == null) return NotFound();
 
             ticket.Status = status;
-            ticket.UpdatedAt = DateTime.UtcNow; // GÜNCELLEME: PostgreSQL uyumlu zaman damgası
+            ticket.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Talep durumu '{GetStatusDisplayName(status)}' olarak güncellendi.";
@@ -201,7 +200,6 @@ namespace TicketSystem.Controllers
         {
             var userId = _userManager.GetUserId(User);
 
-            // Sadece açık talepleri LINQ ile getir (ödev gereksinimi)
             var openTickets = await _context.Tickets
                 .Where(t => t.CustomerId == userId && t.Status == TicketStatus.Acik)
                 .Include(t => t.SupportAgent)
@@ -220,27 +218,18 @@ namespace TicketSystem.Controllers
             return View(allTickets);
         }
 
-        private static string GetStatusDisplayName(TicketStatus status) => status switch
-        {
-            TicketStatus.Acik => "Açık",
-            TicketStatus.Cozuldu => "Çözüldü",
-            TicketStatus.Kapandi => "Kapandı",
-            _ => status.ToString()
-        };
-    }
-    // POST: /Ticket/Delete/5 - Sadece Admin Talebi Silebilir
-[HttpPost]
+        // POST: /Ticket/Delete/5 - Sadece Admin Talebi Silebilir
+        [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var ticket = await _context.Tickets
-                .Include(t => t.Replies) // Önce biletin altındaki cevapları bağlıyoruz
+                .Include(t => t.Replies)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null) return NotFound();
 
-            // PostgreSQL ilişkisel veri koruması nedeniyle önce bilete ait cevapları siliyoruz
             if (ticket.Replies != null && ticket.Replies.Any())
             {
                 _context.TicketReplies.RemoveRange(ticket.Replies);
@@ -249,7 +238,16 @@ namespace TicketSystem.Controllers
             _context.Tickets.Remove(ticket);
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = "Destek talebi ve bağlı tüm mesajlar başarıyla silindi.";
+            TempData["Success"] = "Destek talebi başarıyla silindi.";
             return RedirectToAction(nameof(Index));
         }
+
+        private static string GetStatusDisplayName(TicketStatus status) => status switch
+        {
+            TicketStatus.Acik => "Açık",
+            TicketStatus.Cozuldu => "Çözüldü",
+            TicketStatus.Kapandi => "Kapandı",
+            _ => status.ToString()
+        };
     }
+}
